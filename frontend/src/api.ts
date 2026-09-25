@@ -12,7 +12,7 @@ import {
   WhatIfRequest,
   WhatIfResponse,
 } from "./types";
-import { SimulatorStatus, TwinReference } from "./types.ext";
+import { SimulatorStatus, TwinReference, ScreeningResult, EvaluationReport } from "./types.ext";
 
 const getApiBaseUrl = (): string => {
   let envUrl: string | undefined = undefined;
@@ -169,4 +169,23 @@ export async function getSimulatorStatus(patientId: string): Promise<SimulatorSt
 export async function getTwinReference(patientId: string): Promise<TwinReference> {
   const res = await fetch(`${API_BASE}/api/patients/${encodeURIComponent(patientId)}/twin/reference`);
   return handleResponse<TwinReference>(res);
+}
+
+export async function getScreening(patientId: string): Promise<ScreeningResult> {
+  const res = await fetch(`${API_BASE}/api/patients/${encodeURIComponent(patientId)}/screening`);
+  return handleResponse<ScreeningResult>(res);
+}
+
+export async function runEvaluation(cohortSize = 200, seed = 2026): Promise<EvaluationReport> {
+  const res = await fetch(`${API_BASE}/api/evaluation/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cohort_size: cohortSize, seed }),
+  });
+  return handleResponse<EvaluationReport>(res);
+}
+
+export async function getLatestEvaluation(): Promise<EvaluationReport> {
+  const res = await fetch(`${API_BASE}/api/evaluation/latest`);
+  return handleResponse<EvaluationReport>(res);
 }

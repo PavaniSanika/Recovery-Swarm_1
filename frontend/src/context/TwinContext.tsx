@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   getLatestPlan,
+  getScreening,
   getSimulatorStatus,
   getTwin,
   getTwinReference,
@@ -18,15 +19,17 @@ import {
   TwinState,
   WsMessage,
 } from "../types";
-import { SimulatorStatus, TwinReference } from "../types.ext";
+import { ScreeningResult, SimulatorStatus, TwinReference } from "../types.ext";
 import { RecoverySwarmWebSocket } from "../ws";
 
 export interface TwinContextType {
+  patientId: string;
   twin: TwinState | null;
   latestCycle: CycleResponse | null;
   latestPlan: Plan | null;
   simulatorStatus: SimulatorStatus | null;
   twinReference: TwinReference | null;
+  screeningResult: ScreeningResult | null;
   loading: boolean;
   error: string | null;
   actionLoading: boolean;
@@ -35,6 +38,7 @@ export interface TwinContextType {
   liveDebateMessages: DebateMessage[];
   liveEscalation: { cycle_id: string; summary: string } | null;
   refreshTwin: () => Promise<void>;
+  refreshScreening: () => Promise<void>;
   injectScenario: (scenario: ScenarioName) => Promise<void>;
   advanceTime: (minutes: number) => Promise<void>;
   runOptimizationCycle: () => Promise<void>;
@@ -68,6 +72,7 @@ export const TwinProvider: React.FC<{ children: React.ReactNode; patientId?: str
   const [latestPlan, setLatestPlan] = useState<Plan | null>(null);
   const [simulatorStatus, setSimulatorStatus] = useState<SimulatorStatus | null>(null);
   const [twinReference, setTwinReference] = useState<TwinReference | null>(null);
+  const [screeningResult, setScreeningResult] = useState<ScreeningResult | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
@@ -91,6 +96,22 @@ export const TwinProvider: React.FC<{ children: React.ReactNode; patientId?: str
       setTwinReference(refData);
     } catch {
       setTwinReference(null);
+    }
+
+    try {
+      const screeningData = await getScreening(patientId);
+      setScreeningResult(screeningData);
+    } catch {
+      setScreeningResult(null);
+    }
+  };
+
+  const refreshScreening = async () => {
+    try {
+      const screeningData = await getScreening(patientId);
+      setScreeningResult(screeningData);
+    } catch {
+      setScreeningResult(null);
     }
   };
 
@@ -247,11 +268,13 @@ export const TwinProvider: React.FC<{ children: React.ReactNode; patientId?: str
   return (
     <TwinContext.Provider
       value={{
+        patientId,
         twin,
         latestCycle,
         latestPlan,
         simulatorStatus,
         twinReference,
+        screeningResult,
         loading,
         error,
         actionLoading,
@@ -260,6 +283,7 @@ export const TwinProvider: React.FC<{ children: React.ReactNode; patientId?: str
         liveDebateMessages,
         liveEscalation,
         refreshTwin,
+        refreshScreening,
         injectScenario,
         advanceTime,
         runOptimizationCycle,

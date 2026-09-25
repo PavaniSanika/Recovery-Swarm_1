@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 export const DashboardPage: React.FC = () => {
-  const { twin, latestCycle, latestPlan, loading, error, refreshTwin, runOptimizationCycle, actionLoading } =
+  const { twin, latestCycle, latestPlan, screeningResult, loading, error, refreshTwin, runOptimizationCycle, actionLoading } =
     useTwin();
 
   const isEscalated =
@@ -35,6 +35,12 @@ export const DashboardPage: React.FC = () => {
     latestPlan ||
     latestCycle?.plan ||
     (isEscalated ? latestCycle?.safety?.modified_plan || null : null);
+
+  // Determine highest screening severity
+  const flags = screeningResult?.flags || [];
+  const hasUrgent = flags.some((f) => f.severity === "urgent");
+  const hasReview = flags.some((f) => f.severity === "review");
+  const screeningSeverity: "none" | "review" | "urgent" = hasUrgent ? "urgent" : hasReview ? "review" : "none";
 
   // 1. LOADING STATE (Real Skeleton Loader)
   if (loading && !twin) {
@@ -117,12 +123,28 @@ export const DashboardPage: React.FC = () => {
                   ID: {twin.patient_id}
                 </Badge>
               </div>
-              <Badge variant={getStatusSemantic(trajectory.overall)} dot>
-                Overall: {trajectory.overall.replace(/_/g, " ")}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant={getStatusSemantic(trajectory.overall)} dot>
+                  Overall: {trajectory.overall.replace(/_/g, " ")}
+                </Badge>
+                <span title="Screening flag only. Not a diagnosis. Clinician review required.">
+                  <Badge
+                    variant={
+                      screeningSeverity === "urgent"
+                        ? "danger"
+                        : screeningSeverity === "review"
+                        ? "warning"
+                        : "success"
+                    }
+                    size="sm"
+                  >
+                    Screening: {screeningSeverity === "urgent" ? "Urgent Review" : screeningSeverity === "review" ? "Review Flagged" : "Clear"}
+                  </Badge>
+                </span>
+              </div>
             </div>
             <p className="text-xs text-slate-500">
-              {profile.surgery} • Age {profile.age} • Post-Op Day {profile.post_op_day}
+              {profile.surgery} • Age {profile.age} • Post-Op Day {profile.post_op_day} • <span className="text-[11px] text-slate-400 font-normal">Screening flag only. Not a diagnosis. Clinician review required.</span>
             </p>
           </div>
 

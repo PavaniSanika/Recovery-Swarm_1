@@ -85,7 +85,7 @@ FALLBACK_MODE=true
 ### 3. Run Backend Server & Test Suite
 
 ```bash
-# Run complete test suite (76 tests)
+# Run complete test suite (100 tests)
 $env:FALLBACK_MODE="true"; python -m pytest -q
 
 # Start FastAPI dev server on port 8000
@@ -111,13 +111,18 @@ The UI will be available at `http://localhost:3000` (or `http://localhost:5173`)
 
 ---
 
-## 🎬 20-Step Demo Flow Script & Automated Check
+## 🎬 Demo Verification Scripts
 
-The project includes an automated verification script that executes the complete 20-step hackathon demo flow against the REST API:
-
+### 1. 20-Step Core Demo Check (SPEC Section 21.2)
 ```bash
 # Run 20-step demo verification script (ensure backend is running on http://127.0.0.1:8000)
 python scripts/demo_check.py
+```
+
+### 2. 4-Step Extension Segment Demo Check (SPEC Section 21.3)
+```bash
+# Run 4-step extension demo verification script
+python scripts/demo_extensions.py
 ```
 
 ### The 20 Demo Steps:

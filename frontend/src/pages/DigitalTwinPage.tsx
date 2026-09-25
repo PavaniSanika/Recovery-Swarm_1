@@ -32,6 +32,7 @@ export const DigitalTwinPage: React.FC = () => {
   const {
     twin,
     twinReference,
+    screeningResult,
     loading,
     error,
     refreshTwin,
@@ -150,8 +151,8 @@ export const DigitalTwinPage: React.FC = () => {
         </Card>
       )}
 
-      {/* 3D Body Twin Visualization: Pass empty array for flags argument until Stage H1/H4 screening data is wired */}
-      <BodyTwin3D twin={twin} flags={[]} className="mb-4" />
+      {/* 3D Body Twin Visualization: Pass screening flags to 3D body markers */}
+      <BodyTwin3D twin={twin} flags={screeningResult?.flags || []} className="mb-4" />
 
       {/* Expected vs Actual Trajectory Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
