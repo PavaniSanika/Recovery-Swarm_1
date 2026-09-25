@@ -1,0 +1,17 @@
+{
+  "agent": "medication",
+  "action_type": "pain_review",
+  "direction": "maintain",
+  "target_value": null,
+  "confidence": 0.85,
+  "evidence": [
+    "pain score is 6.0",
+    "medication_effectiveness score is 5.0",
+    "response_score is 5.0"
+  ],
+  "rationale": "The patient reports a pain level of 6.0 with a medication effectiveness score of 5.0, indicating that current comfort levels are moderate and warrant a professional pain management review without altering any medication regimens directly.",
+  "risks": [
+    "Persistent moderate pain could further disrupt sleep quality",
+    "Inadequate pain control may limit daily step progression"
+  ]
+}

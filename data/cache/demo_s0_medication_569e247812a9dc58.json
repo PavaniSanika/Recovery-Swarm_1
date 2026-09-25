@@ -1,0 +1,18 @@
+{
+  "agent": "medication",
+  "action_type": "pain_review",
+  "direction": "maintain",
+  "target_value": null,
+  "confidence": 0.85,
+  "evidence": [
+    "Pain score is 6.0",
+    "Medication effectiveness score is 5.0",
+    "Swelling is 5.5",
+    "Inflammation score is 5.5"
+  ],
+  "rationale": "The patient reports a pain level of 6.0 on post-op day 4 with a medication response score of 5.0, indicating that current pain management is moderately effective. A pain review with the clinical team is warranted to discuss symptom trends without altering any prescriptions.",
+  "risks": [
+    "Persistent moderate pain may limit rehabilitation engagement",
+    "Continued inflammation could impact recovery trajectory"
+  ]
+}

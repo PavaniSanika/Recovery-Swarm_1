@@ -1,0 +1,18 @@
+{
+  "agent": "mobility",
+  "action_type": "mobility",
+  "direction": "increase",
+  "target_value": 1950.0,
+  "confidence": 0.85,
+  "evidence": [
+    "Current steps: 1800",
+    "Pain: 6.0",
+    "Swelling: 5.5",
+    "Mobility capacity score: 5.0"
+  ],
+  "rationale": "Patient is on post-op day 4 with a current step count of 1800. Following the gradual step target change rule of 10% or less above current steps, the new target is set to 1950 steps to safely progress mobility while accounting for a pain score of 6.0 and swelling score of 5.5.",
+  "risks": [
+    "Potential increase in knee pain if progression is too fast",
+    "Potential increase in swelling score above 5.5"
+  ]
+}

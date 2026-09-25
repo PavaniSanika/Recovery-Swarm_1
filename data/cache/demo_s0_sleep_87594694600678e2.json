@@ -1,0 +1,17 @@
+{
+  "agent": "sleep",
+  "action_type": "sleep",
+  "direction": "increase",
+  "target_value": 7.0,
+  "confidence": 0.9,
+  "evidence": [
+    "sleep_hours: 4.5",
+    "sleep_quality: 3.5",
+    "night_awakenings: 4"
+  ],
+  "rationale": "Patient is experiencing poor sleep duration and quality with only 4.5 hours of sleep and 4 night awakenings, which negatively impacts overall knee recovery.",
+  "risks": [
+    "Persistent sleep deprivation may impair tissue healing and immune response",
+    "Continued frequent night awakenings can increase pain sensitivity"
+  ]
+}

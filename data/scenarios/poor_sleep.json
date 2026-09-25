@@ -1,0 +1,42 @@
+{
+  "name": "poor_sleep",
+  "description": "Sleep drops with more night awakenings",
+  "seed": 42,
+  "base": "meera_day4",
+  "steps": [
+    {
+      "minute_offset": 0,
+      "observation": {
+        "timestamp": "2026-09-21T08:00:00Z",
+        "pain": 6.0,
+        "sleep_hours": 4.0,
+        "steps": 1800,
+        "swelling": 6.0,
+        "temperature": 37.1,
+        "heart_rate": 86,
+        "crp": 6.2,
+        "night_awakenings": 5,
+        "flags": []
+      }
+    },
+    {
+      "minute_offset": 60,
+      "observation": {
+        "timestamp": "2026-09-21T09:00:00Z",
+        "pain": 6.2,
+        "sleep_hours": 3.5,
+        "steps": 1780,
+        "swelling": 6.0,
+        "temperature": 37.1,
+        "heart_rate": 88,
+        "crp": 6.3,
+        "night_awakenings": 6,
+        "flags": []
+      }
+    }
+  ],
+  "expect": {
+    "lead_agent": "sleep",
+    "escalated": false
+  }
+}

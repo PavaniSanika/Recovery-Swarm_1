@@ -1,0 +1,18 @@
+{
+  "agent": "mobility",
+  "action_type": "mobility",
+  "direction": "maintain",
+  "target_value": 1800.0,
+  "confidence": 0.85,
+  "evidence": [
+    "pain is 6.0",
+    "steps is 1800",
+    "swelling is 6.0",
+    "mobility is below_expected"
+  ],
+  "rationale": "Given the current high pain score of 6.0, high swelling score of 6.0, and mobility trajectory being below expected, the patient should maintain the current step target of 1800 steps to avoid aggravating inflammation while recovering.",
+  "risks": [
+    "Increasing step target too quickly may worsen knee swelling and pain",
+    "Overexertion could impede the healing process on post-op day 4"
+  ]
+}

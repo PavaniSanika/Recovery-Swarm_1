@@ -1,0 +1,18 @@
+{
+  "agent": "inflammation",
+  "action_type": "swelling",
+  "direction": "decrease",
+  "target_value": null,
+  "confidence": 0.9,
+  "evidence": [
+    "swelling is 5.5",
+    "crp is 5.5",
+    "temperature is 37.0"
+  ],
+  "rationale": "Patient demonstrates stable high inflammation with elevated swelling at 5.5 and CRP at 5.5 on post-op day 4, requiring targeted swelling and inflammation control.",
+  "risks": [
+    "Persistent joint stiffness",
+    "Delayed tissue healing",
+    "Increased post-operative discomfort"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "name": "increased_inflammation",
+  "description": "CRP rises 6.2 to 7.8, swelling 6.0 to 7.5, temp 37.4",
+  "seed": 42,
+  "base": "meera_day4",
+  "steps": [
+    {
+      "minute_offset": 0,
+      "observation": {
+        "timestamp": "2026-09-21T08:00:00Z",
+        "pain": 6.0,
+        "sleep_hours": 4.5,
+        "steps": 1800,
+        "swelling": 6.0,
+        "temperature": 37.1,
+        "heart_rate": 84,
+        "crp": 6.2,
+        "night_awakenings": 4,
+        "flags": []
+      }
+    },
+    {
+      "minute_offset": 60,
+      "observation": {
+        "timestamp": "2026-09-21T09:00:00Z",
+        "pain": 6.2,
+        "sleep_hours": 4.5,
+        "steps": 1750,
+        "swelling": 6.8,
+        "temperature": 37.3,
+        "heart_rate": 86,
+        "crp": 7.0,
+        "night_awakenings": 4,
+        "flags": []
+      }
+    },
+    {
+      "minute_offset": 120,
+      "observation": {
+        "timestamp": "2026-09-21T10:00:00Z",
+        "pain": 6.4,
+        "sleep_hours": 4.2,
+        "steps": 1700,
+        "swelling": 7.5,
+        "temperature": 37.4,
+        "heart_rate": 88,
+        "crp": 7.8,
+        "night_awakenings": 4,
+        "flags": []
+      }
+    }
+  ],
+  "expect": {
+    "lead_agent": "inflammation",
+    "escalated": false,
+    "rule_triggered": "R2"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "agent": "mobility",
+  "action_type": "mobility",
+  "direction": "maintain",
+  "target_value": 1800.0,
+  "confidence": 0.85,
+  "evidence": [
+    "pain is 6.0",
+    "steps are 1800",
+    "swelling is 6.0",
+    "mobility trajectory is below_expected"
+  ],
+  "rationale": "Given the current pain level of 6.0, swelling of 6.0, and a mobility trajectory that is below expected, the patient should maintain their current step target of 1800 steps to avoid overloading the knee joint and worsening inflammation.",
+  "risks": [
+    "Increasing steps too soon may exacerbate swelling and pain",
+    "High pain level of 6.0 could lead to compensatory gait issues"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "name": "reduced_mobility",
+  "description": "Steps drop from 1800 to 1100",
+  "seed": 42,
+  "base": "meera_day4",
+  "steps": [
+    {
+      "minute_offset": 0,
+      "observation": {
+        "timestamp": "2026-09-21T08:00:00Z",
+        "pain": 6.0,
+        "sleep_hours": 4.5,
+        "steps": 1800,
+        "swelling": 6.0,
+        "temperature": 37.1,
+        "heart_rate": 84,
+        "crp": 6.2,
+        "night_awakenings": 4,
+        "flags": []
+      }
+    },
+    {
+      "minute_offset": 60,
+      "observation": {
+        "timestamp": "2026-09-21T09:00:00Z",
+        "pain": 6.1,
+        "sleep_hours": 4.5,
+        "steps": 1500,
+        "swelling": 6.0,
+        "temperature": 37.1,
+        "heart_rate": 83,
+        "crp": 6.2,
+        "night_awakenings": 4,
+        "flags": []
+      }
+    },
+    {
+      "minute_offset": 120,
+      "observation": {
+        "timestamp": "2026-09-21T10:00:00Z",
+        "pain": 6.2,
+        "sleep_hours": 4.5,
+        "steps": 1100,
+        "swelling": 6.0,
+        "temperature": 37.1,
+        "heart_rate": 82,
+        "crp": 6.2,
+        "night_awakenings": 4,
+        "flags": []
+      }
+    }
+  ],
+  "expect": {
+    "lead_agent": "mobility",
+    "escalated": false
+  }
+}

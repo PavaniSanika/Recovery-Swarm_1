@@ -1,0 +1,42 @@
+{
+  "patient_id": "P001",
+  "profile": {
+    "name": "Meera Sharma",
+    "age": 62,
+    "surgery": "Total Knee Replacement",
+    "post_op_day": 4
+  },
+  "observations": {
+    "pain": 6.0,
+    "sleep_hours": 4.5,
+    "steps": 1800,
+    "swelling": 6.0,
+    "temperature": 37.1,
+    "heart_rate": 84,
+    "crp": 6.2,
+    "night_awakenings": 4,
+    "flags": []
+  },
+  "scores": {
+    "inflammation_score": 6.2,
+    "mobility_capacity": 5.0,
+    "sleep_quality": 3.5,
+    "medication_effectiveness": 5.5,
+    "complication_risk": 3.2,
+    "recovery_score": 68
+  },
+  "trajectory": {
+    "overall": "slightly_below_expected",
+    "inflammation": "stable_high",
+    "mobility": "below_expected",
+    "sleep": "poor"
+  },
+  "medications": {
+    "current": [
+      "Paracetamol",
+      "Low-dose opioid at night"
+    ],
+    "response_score": 5.5
+  },
+  "history": []
+}

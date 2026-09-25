@@ -1,0 +1,18 @@
+{
+  "agent": "inflammation",
+  "action_type": "swelling",
+  "direction": "decrease",
+  "target_value": null,
+  "confidence": 0.9,
+  "evidence": [
+    "swelling is 6.0",
+    "crp is 6.2",
+    "temperature is 37.1"
+  ],
+  "rationale": "The patient exhibits elevated swelling and high CRP levels on post-op day 4, indicating persistent post-surgical inflammation that requires active management to reduce joint swelling.",
+  "risks": [
+    "Increased joint stiffness",
+    "Prolonged recovery timeline",
+    "Potential escalation of pain if inflammation remains uncontrolled"
+  ]
+}

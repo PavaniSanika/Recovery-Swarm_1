@@ -1,0 +1,18 @@
+{
+  "agent": "sleep",
+  "action_type": "sleep",
+  "direction": "increase",
+  "target_value": 7.0,
+  "confidence": 0.85,
+  "evidence": [
+    "sleep_hours: 4.0",
+    "sleep_quality: 2.3",
+    "night_awakenings: 5",
+    "pain: 6.0"
+  ],
+  "rationale": "Patient Meera Sharma is experiencing severely deficient sleep with only 4.0 hours recorded, high night awakenings of 5, and a low sleep quality score of 2.3, heavily impacted by a pain level of 6.0.",
+  "risks": [
+    "Prolonged sleep deprivation may hinder post-operative tissue healing",
+    "Increased sensitivity to pain due to lack of restorative sleep"
+  ]
+}

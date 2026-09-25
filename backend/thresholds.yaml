@@ -1,0 +1,77 @@
+scoring:
+  # inflammation_score = w_crp*crp + w_swelling*swelling + temp_bonus
+  inflammation: {w_crp: 0.7, w_swelling: 0.3, temp_base_c: 37.0, temp_bonus_per_0_1c: 0.1}
+  sleep: {target_hours: 7.5, max_disturbance_penalty: 3.0, penalty_per_awakening: 0.625}
+  recovery_score_weights: {pain: 0.17, inflammation: 0.17, mobility: 0.14, sleep: 0.10, complication: 0.10}
+  complication_points:
+    temp_above_37_8: 1.0
+    crp_rising: 1.5
+    asymmetric_swelling: 1.0
+    pain_rising_3_readings: 1.0
+    age_above_60: 0.5
+
+reference:            # expected recovery curve, Total Knee Replacement (approximate)
+  TKR:
+    pain:         {1: 7.0, 2: 6.0, 3: 5.0, 4: 4.0, 5: 3.5, 6: 3.0, 7: 2.5}
+    inflammation: {1: 7.5, 2: 7.0, 3: 6.0, 4: 5.2, 5: 4.6, 6: 4.0, 7: 3.5}
+    step_target:  {1: 600, 2: 1200, 3: 1800, 4: 2500, 5: 2800, 6: 3200, 7: 3500}
+
+trajectory:
+  slightly_below: {pain_dev: 1.0, inflammation_dev: 0.5, steps_frac_below: 0.90}
+  below:          {pain_dev: 3.0, inflammation_dev: 2.0, steps_frac_below: 0.60, min_conditions: 2}
+  slope_threshold: 0.15          # inflammation slope per reading
+  sleep_bands: {good_above: 6.0, poor_below: 4.0}
+
+deviation_check:                 # workflow component, early warning
+  pain_above_expected: {points: 2.0, consecutive_readings: 2}
+  worsening_consecutive_readings: 3
+  inflammation_not_falling_hours: 24
+
+router:
+  base: 0.3
+  scale: 0.9                     # priority = clamp(base + scale * signal, 0, 1)
+  lead_count: 3
+  waiting_below: 0.30
+  role_multiplier: {lead: 1.5, supporting: 1.0}
+
+safety_rules:
+  R1: {pain_at_least: 8.0, pain_rise_24h: 2.0, outcome: escalate, block_activity_increase: true}
+  R2: {swelling_at_least: 6.0, requires_increasing: true, outcome: modify, cap: current_steps}
+  R3: {temperature_at_least: 38.0, red_flags: [chest_pain, breathlessness, calf_pain], outcome: escalate}
+  R4: {max_daily_step_increase_pct: 10, outcome: modify}
+  R5: {outcome: reject, forbidden_terms: [dose, dosage, increase medication, decrease medication,
+       start medication, stop medication, new medication, prescribe, mg]}
+  R6: {sleep_hours_below: 4.0, pain_at_least: 7.0, outcome: modify, cap: current_steps}
+  R7: {min_confidence: 0.5, outcome: escalate}
+  R8: {wound_flags: [wound_redness, wound_discharge, wound_opening], outcome: escalate}
+  max_retry_loops: 2
+
+whatif_effect_per_10pct_steps:   # per +10% steps; "moderate_or_higher" means swelling >= 5
+  below_moderate:      {pain: 0.1, swelling: 0.1, sleep_hours: 0.0}
+  moderate_or_higher:  {pain: 0.3, swelling: 0.4, sleep_hours: -0.1}
+
+llm:
+  temperature: 0.1
+  max_tokens: 600
+  timeout_s: 20
+  retries: 2
+  fallback_mode: false           # true = rule-based agents only
+
+agents:
+  mobility:
+    base_confidence: 0.70
+    revised_confidence_boost: 0.12
+    gap_fraction: 0.60
+    round_step_target: 50
+  inflammation:
+    base_confidence: 0.80
+    high_threshold: 6.0
+  medication:
+    base_confidence: 0.75
+    escalate_pain: 8.0
+    review_pain: 6.0
+    min_adequate_response: 5.0
+  sleep:
+    base_confidence: 0.85
+  max_confidence: 1.00
+

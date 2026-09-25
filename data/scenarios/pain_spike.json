@@ -1,0 +1,73 @@
+{
+  "name": "pain_spike",
+  "description": "Pain rises from 6.0 to 8.2 within 24 hours",
+  "seed": 42,
+  "base": "meera_day4",
+  "steps": [
+    {
+      "minute_offset": 0,
+      "observation": {
+        "timestamp": "2026-09-21T08:00:00Z",
+        "pain": 6.0,
+        "sleep_hours": 4.5,
+        "steps": 1800,
+        "swelling": 6.0,
+        "temperature": 37.1,
+        "heart_rate": 84,
+        "crp": 6.2,
+        "night_awakenings": 4,
+        "flags": []
+      }
+    },
+    {
+      "minute_offset": 60,
+      "observation": {
+        "timestamp": "2026-09-21T09:00:00Z",
+        "pain": 6.8,
+        "sleep_hours": 4.0,
+        "steps": 1700,
+        "swelling": 6.2,
+        "temperature": 37.2,
+        "heart_rate": 88,
+        "crp": 6.4,
+        "night_awakenings": 4,
+        "flags": []
+      }
+    },
+    {
+      "minute_offset": 120,
+      "observation": {
+        "timestamp": "2026-09-21T10:00:00Z",
+        "pain": 7.5,
+        "sleep_hours": 3.8,
+        "steps": 1500,
+        "swelling": 6.5,
+        "temperature": 37.4,
+        "heart_rate": 92,
+        "crp": 6.6,
+        "night_awakenings": 5,
+        "flags": []
+      }
+    },
+    {
+      "minute_offset": 180,
+      "observation": {
+        "timestamp": "2026-09-21T11:00:00Z",
+        "pain": 8.2,
+        "sleep_hours": 3.5,
+        "steps": 1300,
+        "swelling": 6.8,
+        "temperature": 37.5,
+        "heart_rate": 96,
+        "crp": 6.8,
+        "night_awakenings": 5,
+        "flags": []
+      }
+    }
+  ],
+  "expect": {
+    "lead_agent": "mobility",
+    "escalated": true,
+    "rule_triggered": "R1"
+  }
+}
