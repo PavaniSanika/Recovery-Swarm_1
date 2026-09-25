@@ -190,6 +190,17 @@ class SimulationRunModel(Base):
     base_twin_state = relationship("TwinStateModel", back_populates="simulation_runs")
 
 
+class EvaluationRunModel(Base):
+    __tablename__ = "evaluation_runs"
+
+    run_id = Column(String(50), primary_key=True)
+    created_at = Column(String(50), nullable=False)
+    seed = Column(Integer, nullable=False)
+    cohort_size = Column(Integer, nullable=False)
+    report_json = Column(JSON, nullable=False)
+
+
+
 # ---------- Database Initialization & Seeding ----------
 
 def get_db():

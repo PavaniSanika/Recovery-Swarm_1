@@ -33,6 +33,7 @@ from app.db import (
     SafetyEventModel,
     SimulationRunModel,
     TwinStateModel,
+    EvaluationRunModel,
     get_db,
     init_db,
 )
@@ -50,8 +51,9 @@ from app.models.schemas import (
     SimulatorStatus,
     TwinReference,
 )
-from app.models.extensions import ScreeningResult
+from app.models.extensions import ScreeningResult, EvaluationRunRequest, EvaluationReport
 from app.workflow.screening import screen
+from app.evaluation.runner import run_evaluation
 from app.simulator import Simulator
 from app.twin.engine import TwinEngine
 from app.twin.reference import (
@@ -227,6 +229,41 @@ def get_patient_screening(patient_id: str, db: Session = Depends(get_db)):
     )
     flags = latest_obs.flags if (latest_obs and latest_obs.flags) else twin.observations.flags
     return screen(twin=twin, flags=flags, history=twin.history)
+
+
+@app.post("/api/evaluation/run", response_model=EvaluationReport)
+def run_evaluation_endpoint(req: EvaluationRunRequest = EvaluationRunRequest(), db: Session = Depends(get_db)):
+    """Executes synthetic cohort technical evaluation, persists to DB, and returns EvaluationReport."""
+    report = run_evaluation(req)
+    
+    # Save to evaluation_runs DB table
+    run_row = EvaluationRunModel(
+        run_id=report.run_id,
+        created_at=report.created_at,
+        seed=report.seed,
+        cohort_size=report.cohort_size,
+        report_json=report.model_dump(),
+    )
+    db.add(run_row)
+    db.commit()
+    
+    return report
+
+
+@app.get("/api/evaluation/latest", response_model=EvaluationReport)
+def get_latest_evaluation(db: Session = Depends(get_db)):
+    """Returns the most recent EvaluationReport from evaluation_runs database table."""
+    row = (
+        db.query(EvaluationRunModel)
+        .order_by(EvaluationRunModel.created_at.desc())
+        .first()
+    )
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "EVALUATION_NOT_FOUND", "message": "No evaluation runs found in database."}},
+        )
+    return EvaluationReport(**row.report_json)
 
 
 @app.post("/api/patients/{patient_id}/cycle", response_model=CycleResponse)

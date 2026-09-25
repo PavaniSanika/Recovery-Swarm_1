@@ -89,4 +89,17 @@ screening:
   SF5: {title: "Slow mobility progress",
         review: {steps_fraction_below: 0.60, consecutive_readings: 2}}
 
+evaluation:
+  default_cohort_size: 200
+  max_cohort_size: 500
+  default_seed: 2026
+  readings_per_day: 4            # every 6 hours
+  post_op_days: [3, 4, 5, 6]
+  missing_reading_rate: 0.03
+  group_prevalence: {stable: 0.50, infection_like: 0.10, clot_like: 0.10,
+                     delayed_healing: 0.10, uncontrolled_pain: 0.10, mobility_decline: 0.10}
+  full_cycle_every_n_readings: 4
+  max_runtime_s: 60
+
+
 
