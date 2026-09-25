@@ -112,8 +112,8 @@ def call_llm_structured(
         LAST_RUN_STATS["fallback_calls"] += 1
         return fallback_fn(twin)
 
-    api_key = config.llm_api_key
-    if not api_key or api_key == "your_key_here":
+    api_key = config.llm_api_key or os.getenv("LLM_API_KEY", "")
+    if not api_key or api_key == "your_key_here" or not api_key.startswith("AIzaSy"):
         LAST_RUN_STATS["fallback_calls"] += 1
         return fallback_fn(twin)
 

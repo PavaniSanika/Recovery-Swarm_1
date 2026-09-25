@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useTwin } from "../context/TwinContext";
 import { postWhatIf } from "../api";
 import { WhatIfResponse } from "../types";
+import { BodyTwin3D } from "../components/body/BodyTwin3D";
 import { Card, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -122,6 +123,17 @@ export const WhatIfPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* 3D Body Twin Sandbox Panel (Ghost body overlay rendered when simulatedTwin is available).
+          Pass empty array for flags argument until Stage H1/H4 screening data is wired */}
+      {twin && (
+        <BodyTwin3D
+          twin={twin}
+          simulatedTwin={result?.simulated_twin || null}
+          flags={[]}
+          className="mb-6"
+        />
+      )}
 
       {/* Simulation Controls Input Card */}
       <Card className="p-6">

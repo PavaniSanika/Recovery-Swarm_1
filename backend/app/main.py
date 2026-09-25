@@ -50,6 +50,8 @@ from app.models.schemas import (
     SimulatorStatus,
     TwinReference,
 )
+from app.models.extensions import ScreeningResult
+from app.workflow.screening import screen
 from app.simulator import Simulator
 from app.twin.engine import TwinEngine
 from app.twin.reference import (
@@ -211,6 +213,20 @@ def get_twin_reference(patient_id: str, db: Session = Depends(get_db)):
             "step_target": {str(k): float(v) for k, v in ref_data.get("step_target", {}).items()},
         },
     )
+
+
+@app.get("/api/patients/{patient_id}/screening", response_model=ScreeningResult)
+def get_patient_screening(patient_id: str, db: Session = Depends(get_db)):
+    """Returns ScreeningResult for current patient twin state, history, and latest observation flags."""
+    twin = get_patient_current_twin(patient_id, db)
+    latest_obs = (
+        db.query(ObservationModel)
+        .filter_by(patient_id=patient_id)
+        .order_by(ObservationModel.obs_id.desc())
+        .first()
+    )
+    flags = latest_obs.flags if (latest_obs and latest_obs.flags) else twin.observations.flags
+    return screen(twin=twin, flags=flags, history=twin.history)
 
 
 @app.post("/api/patients/{patient_id}/cycle", response_model=CycleResponse)

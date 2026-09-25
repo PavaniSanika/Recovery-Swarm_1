@@ -75,3 +75,18 @@ agents:
     base_confidence: 0.85
   max_confidence: 1.00
 
+screening:
+  SF1: {title: "Possible infection pattern",
+        review: {temperature_at_least: 37.8, crp_at_least: 7.0},
+        urgent: {temperature_at_least: 38.0, wound_flags: [wound_redness, wound_discharge, wound_opening]}}
+  SF2: {title: "Possible clot warning signs",
+        review: {flag: calf_pain, swelling_at_least: 6.0},
+        urgent: {flags_any: [chest_pain, breathlessness], calf_pain_swelling_at_least: 7.0}}
+  SF3: {title: "Delayed healing pattern",
+        review: {overall_in: [below_expected, deteriorating], consecutive_readings: 2}}
+  SF4: {title: "Uncontrolled pain pattern",
+        review: {pain_at_least: 7.0, consecutive_readings: 2}}
+  SF5: {title: "Slow mobility progress",
+        review: {steps_fraction_below: 0.60, consecutive_readings: 2}}
+
+
