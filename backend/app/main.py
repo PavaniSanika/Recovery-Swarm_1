@@ -57,7 +57,7 @@ from app.models.schemas import (
     SimulatorStatus,
     TwinReference,
 )
-from app.models.extensions import ScreeningResult, EvaluationRunRequest, EvaluationReport
+from app.models.extensions import ScreeningResult, EvaluationRunRequest, EvaluationReport, HospitalPatientSummary
 from app.workflow.screening import screen
 from app.evaluation.runner import run_evaluation
 from app.simulator import Simulator
@@ -300,6 +300,54 @@ def get_patient_screening(patient_id: str, db: Session = Depends(get_db)):
     )
     flags = latest_obs.flags if (latest_obs and latest_obs.flags) else twin.observations.flags
     return screen(twin=twin, flags=flags, history=twin.history)
+
+
+@app.get("/api/hospital/patients", response_model=List[HospitalPatientSummary])
+def get_hospital_patients(db: Session = Depends(get_db)):
+    """Returns read-only aggregated ward view summaries for patients P001-P006."""
+    patient_ids = ["P001", "P002", "P003", "P004", "P005", "P006"]
+    summaries = []
+
+    for pid in patient_ids:
+        twin = get_patient_current_twin(pid, db)
+        latest_obs = (
+            db.query(ObservationModel)
+            .filter_by(patient_id=pid)
+            .order_by(ObservationModel.obs_id.desc())
+            .first()
+        )
+        flags = latest_obs.flags if (latest_obs and latest_obs.flags) else twin.observations.flags
+        scr_res = screen(twin=twin, flags=flags, history=twin.history)
+
+        top_sev = None
+        if scr_res.flags:
+            if any(f.severity == "urgent" for f in scr_res.flags):
+                top_sev = "urgent"
+            elif any(f.severity == "review" for f in scr_res.flags):
+                top_sev = "review"
+            else:
+                top_sev = "info"
+
+        latest_dec = (
+            db.query(DecisionModel)
+            .filter_by(patient_id=pid)
+            .order_by(DecisionModel.created_at.desc())
+            .first()
+        )
+        escalated = latest_dec.escalated if latest_dec else False
+
+        summaries.append(
+            HospitalPatientSummary(
+                patient_id=twin.patient_id,
+                name=twin.profile.name,
+                recovery_score=twin.scores.recovery_score,
+                trajectory_overall=twin.trajectory.overall,
+                escalated=escalated,
+                top_screening_severity=top_sev,
+            )
+        )
+
+    return summaries
 
 
 @app.post("/api/evaluation/run", response_model=EvaluationReport)

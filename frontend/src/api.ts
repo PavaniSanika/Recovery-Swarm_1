@@ -12,7 +12,7 @@ import {
   WhatIfRequest,
   WhatIfResponse,
 } from "./types";
-import { SimulatorStatus, TwinReference, ScreeningResult, EvaluationReport } from "./types.ext";
+import { SimulatorStatus, TwinReference, ScreeningResult, EvaluationReport, HospitalPatientSummary } from "./types.ext";
 
 const getApiBaseUrl = (): string => {
   let envUrl: string | undefined = undefined;
@@ -188,4 +188,9 @@ export async function runEvaluation(cohortSize = 200, seed = 2026): Promise<Eval
 export async function getLatestEvaluation(): Promise<EvaluationReport> {
   const res = await fetch(`${API_BASE}/api/evaluation/latest`);
   return handleResponse<EvaluationReport>(res);
+}
+
+export async function getHospitalPatients(): Promise<HospitalPatientSummary[]> {
+  const res = await fetch(`${API_BASE}/api/hospital/patients`);
+  return handleResponse<HospitalPatientSummary[]>(res);
 }

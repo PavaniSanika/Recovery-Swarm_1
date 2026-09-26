@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 export const WhatIfPage: React.FC = () => {
-  const { twin } = useTwin();
+  const { twin, patientId } = useTwin();
 
   // Input states
   const [stepsPct, setStepsPct] = useState<number>(20);
@@ -52,7 +52,7 @@ export const WhatIfPage: React.FC = () => {
     }
 
     try {
-      const res = await postWhatIf("P001", { changes });
+      const res = await postWhatIf(patientId || "P001", { changes });
       setResult(res);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Simulation request failed.";

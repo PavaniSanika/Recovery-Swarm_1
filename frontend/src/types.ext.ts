@@ -107,3 +107,13 @@ export interface BodyParams {
 
 export const BODY_DISCLAIMER =
   "Visualization of prototype scores. Not an anatomical or physiological simulation.";
+
+export interface HospitalPatientSummary {
+  patient_id: string;
+  name: string;
+  recovery_score: number;
+  trajectory_overall: string;
+  escalated: boolean;
+  top_screening_severity: Severity | null;
+}
+

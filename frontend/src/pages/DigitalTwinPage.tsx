@@ -1,5 +1,6 @@
 import React from "react";
 import { useTwin } from "../context/TwinContext";
+import { HospitalInspectionBanner } from "../components/HospitalInspectionBanner";
 import { BodyTwin3D } from "../components/body/BodyTwin3D";
 import { Card, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
@@ -121,6 +122,8 @@ export const DigitalTwinPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <HospitalInspectionBanner patientId={twin.patient_id} patientName={profile.name} />
+
       {/* Page Title & Context Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

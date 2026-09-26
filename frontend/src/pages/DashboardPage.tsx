@@ -1,5 +1,7 @@
 import React from "react";
 import { useTwin } from "../context/TwinContext";
+import { useAuth } from "../context/AuthContext";
+import { HospitalInspectionBanner } from "../components/HospitalInspectionBanner";
 import { Card, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -23,6 +25,7 @@ import {
 } from "lucide-react";
 
 export const DashboardPage: React.FC = () => {
+  const { role } = useAuth();
   const { twin, latestCycle, latestPlan, screeningResult, loading, error, refreshTwin, runOptimizationCycle, actionLoading } =
     useTwin();
 
@@ -96,6 +99,9 @@ export const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Hospital Staff Inspection Banner */}
+      <HospitalInspectionBanner patientId={twin.patient_id} patientName={profile.name} />
+
       {/* Inline Error Alert if background refresh fails */}
       {error && (
         <Card padding="sm" className="border-red-200 bg-red-50/60">
@@ -118,10 +124,15 @@ export const DashboardPage: React.FC = () => {
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-semibold text-slate-900">{profile.name}</h2>
+                <h2 className="text-xl font-bold text-slate-900">{profile.name}</h2>
                 <Badge variant="neutral" size="sm">
                   ID: {twin.patient_id}
                 </Badge>
+                {role === "patient" && (
+                  <Badge variant="outline" className="border-teal-200 text-teal-800 bg-teal-50 text-[10px]">
+                    My Dashboard
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={getStatusSemantic(trajectory.overall)} dot>

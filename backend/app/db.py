@@ -218,55 +218,117 @@ def get_db():
 
 
 def init_db():
-    """Creates all tables and seeds canonical patient P001 (Meera Sharma) if missing."""
+    """Creates all tables and seeds patients P001-P006 with historical reading progressions if missing."""
     Base.metadata.create_all(bind=engine)
 
     db = SessionLocal()
     try:
-        patient = db.query(PatientModel).filter_by(patient_id="P001").first()
         scenarios_dir = Path(__file__).resolve().parent.parent.parent / "data" / "scenarios"
         meera_file = scenarios_dir / "meera_day4.json"
+        if not meera_file.exists():
+            return
 
-        if not patient and meera_file.exists():
-            with open(meera_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
+        with open(meera_file, "r", encoding="utf-8") as f:
+            meera_data = json.load(f)
 
-            twin = TwinState(**data)
+        seed_configs = [
+            {"patient_id": "P001", "name": "Meera Sharma", "age": 68, "surgery": "Total Knee Replacement", "scenario": "meera_day4"},
+            {"patient_id": "P002", "name": "Rajesh Patel", "age": 58, "surgery": "Total Knee Replacement", "scenario": "pain_spike"},
+            {"patient_id": "P003", "name": "Anita Desai", "age": 62, "surgery": "Total Knee Replacement", "scenario": "recovery_deviation"},
+            {"patient_id": "P004", "name": "David Miller", "age": 65, "surgery": "Total Knee Replacement", "scenario": "increased_inflammation"},
+            {"patient_id": "P005", "name": "Sunita Rao", "age": 54, "surgery": "Total Knee Replacement", "scenario": "reduced_mobility"},
+            {"patient_id": "P006", "name": "Robert Chen", "age": 70, "surgery": "Total Knee Replacement", "scenario": "poor_sleep"},
+        ]
+
+        from app.models.schemas import ObservationIn
+        from app.twin.engine import TwinEngine
+
+        for cfg_item in seed_configs:
+            pid = cfg_item["patient_id"]
+            existing = db.query(PatientModel).filter_by(patient_id=pid).first()
+            if existing:
+                continue
+
+            # Start from baseline Meera state template
+            twin_base = TwinState(**meera_data)
+            twin_base.patient_id = pid
+            twin_base.profile.name = cfg_item["name"]
+            twin_base.profile.age = cfg_item["age"]
+            twin_base.profile.surgery = cfg_item["surgery"]
+
             patient = PatientModel(
-                patient_id=twin.patient_id,
-                name=twin.profile.name,
-                age=twin.profile.age,
-                surgery=twin.profile.surgery,
+                patient_id=pid,
+                name=cfg_item["name"],
+                age=cfg_item["age"],
+                surgery=cfg_item["surgery"],
                 surgery_date="2026-09-17",
                 care_plan={"target": "Post-Op TKR Recovery"},
             )
             db.add(patient)
 
-            # Seed baseline twin state
-            state_row = TwinStateModel(
-                patient_id=twin.patient_id,
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                twin_json=twin.model_dump(),
-                recovery_score=twin.scores.recovery_score,
-                trajectory_overall=twin.trajectory.overall,
-            )
-            db.add(state_row)
+            scenario_name = cfg_item["scenario"]
+            if scenario_name == "meera_day4":
+                # Single baseline reading
+                state_row = TwinStateModel(
+                    patient_id=pid,
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    twin_json=twin_base.model_dump(),
+                    recovery_score=twin_base.scores.recovery_score,
+                    trajectory_overall=twin_base.trajectory.overall,
+                )
+                db.add(state_row)
 
-            # Seed initial observation row
-            obs_row = ObservationModel(
-                patient_id=twin.patient_id,
-                timestamp="2026-09-21T08:00:00Z",
-                pain=twin.observations.pain,
-                sleep_hours=twin.observations.sleep_hours,
-                steps=twin.observations.steps,
-                swelling=twin.observations.swelling,
-                temperature=twin.observations.temperature,
-                heart_rate=twin.observations.heart_rate,
-                crp=twin.observations.crp,
-                night_awakenings=4,
-                flags=[],
-            )
-            db.add(obs_row)
+                obs_row = ObservationModel(
+                    patient_id=pid,
+                    timestamp="2026-09-21T08:00:00Z",
+                    pain=twin_base.observations.pain,
+                    sleep_hours=twin_base.observations.sleep_hours,
+                    steps=twin_base.observations.steps,
+                    swelling=twin_base.observations.swelling,
+                    temperature=twin_base.observations.temperature,
+                    heart_rate=twin_base.observations.heart_rate,
+                    crp=twin_base.observations.crp,
+                    night_awakenings=4,
+                    flags=[],
+                )
+                db.add(obs_row)
+            else:
+                scen_file = scenarios_dir / f"{scenario_name}.json"
+                if scen_file.exists():
+                    with open(scen_file, "r", encoding="utf-8") as sf:
+                        scen_data = json.load(sf)
+                    
+                    steps = scen_data.get("steps", [])
+                    curr_twin = twin_base
+                    for step_item in steps:
+                        obs_dict = step_item["observation"]
+                        obs_in = ObservationIn(**obs_dict)
+                        curr_twin = TwinEngine.update(curr_twin, obs_in)
+                        
+                        obs_row = ObservationModel(
+                            patient_id=pid,
+                            timestamp=obs_in.timestamp,
+                            pain=obs_in.pain,
+                            sleep_hours=obs_in.sleep_hours,
+                            steps=obs_in.steps,
+                            swelling=obs_in.swelling,
+                            temperature=obs_in.temperature,
+                            heart_rate=obs_in.heart_rate,
+                            crp=obs_in.crp,
+                            night_awakenings=obs_in.night_awakenings,
+                            flags=obs_in.flags,
+                        )
+                        db.add(obs_row)
+
+                    state_row = TwinStateModel(
+                        patient_id=pid,
+                        timestamp=datetime.now(timezone.utc).isoformat(),
+                        twin_json=curr_twin.model_dump(),
+                        recovery_score=curr_twin.scores.recovery_score,
+                        trajectory_overall=curr_twin.trajectory.overall,
+                    )
+                    db.add(state_row)
+
             db.commit()
     finally:
         db.close()

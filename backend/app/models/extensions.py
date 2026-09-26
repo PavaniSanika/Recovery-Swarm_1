@@ -76,3 +76,13 @@ class EvaluationReport(Strict):
     report_hash: str                    # sha256 of the report excluding run_id, created_at, report_hash
     limitations: list[str]
     disclaimer: str                     # EVAL_DISCLAIMER
+
+
+class HospitalPatientSummary(Strict):
+    patient_id: str
+    name: str
+    recovery_score: int
+    trajectory_overall: str
+    escalated: bool
+    top_screening_severity: Optional[Literal["info", "review", "urgent"]] = None
+
