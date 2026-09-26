@@ -144,8 +144,8 @@ def health_check(db: Session = Depends(get_db)):
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
 
-    local_url = os.getenv("LOCAL_LLM_URL", "").strip()
-    llm_mode = "local_gpu" if local_url else ("fallback_offline" if config.fallback_mode else "gemini_cloud")
+    local_url = os.getenv("LOCAL_LLM_URL", "").strip() or "http://127.0.0.1:11434"
+    llm_mode = "local_gpu (RTX 2050)" if local_url else ("fallback_offline" if config.fallback_mode else "gemini_cloud")
 
     return {
         "status": "healthy" if db_status == "connected" else "degraded",

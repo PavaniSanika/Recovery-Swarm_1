@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import threading
 import time
 from typing import Any, Callable, Dict, Optional, Type, TypeVar
@@ -113,12 +114,12 @@ def deidentify_prompt_for_llm(user_prompt: str, twin: Any) -> str:
 
 
 AGENT_LOCAL_MODEL_MAP = {
-    "mobility": "llama3.2:3b",
-    "sleep": "llama3.2:3b",
-    "inflammation": "llama3.1:8b",
-    "medication": "llama3.1:8b",
-    "coordinator": "llama3.1:8b",
-    "debate": "llama3.1:8b",
+    "mobility": os.getenv("LOCAL_FAST_MODEL", "qwen2.5:0.5b"),
+    "sleep": os.getenv("LOCAL_FAST_MODEL", "qwen2.5:0.5b"),
+    "inflammation": os.getenv("LOCAL_CLINICAL_MODEL", "qwen2.5:7b"),
+    "medication": os.getenv("LOCAL_CLINICAL_MODEL", "qwen2.5:7b"),
+    "coordinator": os.getenv("LOCAL_CLINICAL_MODEL", "qwen2.5:7b"),
+    "debate": os.getenv("LOCAL_CLINICAL_MODEL", "qwen2.5:7b"),
 }
 
 
@@ -145,31 +146,83 @@ def call_llm_structured(
         LAST_RUN_STATS["fallback_calls"] += 1
         return fallback_fn(twin)
 
-    # Check local GPU/Ollama endpoint first (e.g. Google Colab GPU / On-Premise Ollama)
+    # Check local GPU/Ollama endpoint first (e.g. Local RTX 2050 GPU / Google Colab / On-Premise Ollama)
     local_llm_url = os.getenv("LOCAL_LLM_URL", "").strip()
+    if not local_llm_url and not os.getenv("PYTEST_CURRENT_TEST"):
+        # Auto-detect local Ollama instance on host
+        local_llm_url = "http://127.0.0.1:11434"
+
     if local_llm_url:
         try:
             import requests
-            endpoint = f"{local_llm_url.rstrip('/')}/chat/completions"
-            # Heterogeneous model dispatch: assign dedicated model by agent specialty
-            local_model = AGENT_LOCAL_MODEL_MAP.get(agent_name.lower(), "llama3.1:8b")
-            payload = {
-                "model": local_model,
-                "messages": [
-                    {"role": "system", "content": system_prompt + "\nReturn ONLY raw valid JSON matching schema."},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "format": "json",
-                "temperature": 0.1,
-                "stream": False
-            }
-            resp = requests.post(endpoint, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
-            if resp.status_code == 200:
-                resp_data = resp.json()
-                content_str = resp_data["choices"][0]["message"]["content"].strip()
-                if content_str.startswith("```"):
-                    content_str = content_str.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            base_url = local_llm_url.rstrip("/")
+            if base_url.endswith("/v1"):
+                base_url = base_url[:-3]
+            local_model = AGENT_LOCAL_MODEL_MAP.get(agent_name.lower(), os.getenv("LOCAL_CLINICAL_MODEL", "qwen2.5:7b"))
+
+            content_str = None
+            schema = None
+            try:
+                schema = response_model.model_json_schema()
+            except Exception:
+                schema = None
+
+            # Attempt 1: Native Ollama /api/chat with strict grammar schema
+            if schema:
+                try:
+                    payload = {
+                        "model": local_model,
+                        "messages": [
+                            {"role": "system", "content": f"{system_prompt}\nAgent: '{agent_name}'. Confidence must be float between 0.0 and 1.0."},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "format": schema,
+                        "stream": False,
+                        "options": {"temperature": 0.1}
+                    }
+                    resp = requests.post(f"{base_url}/api/chat", json=payload, headers={"Content-Type": "application/json"}, timeout=45)
+                    if resp.status_code == 200:
+                        content_str = resp.json().get("message", {}).get("content", "").strip()
+                except Exception:
+                    content_str = None
+
+            # Attempt 2: OpenAI-compatible /v1/chat/completions fallback
+            if not content_str:
+                openai_payload = {
+                    "model": local_model,
+                    "messages": [
+                        {"role": "system", "content": system_prompt + "\nReturn ONLY valid JSON matching schema."},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "format": "json",
+                    "temperature": 0.1,
+                    "stream": False
+                }
+                resp = requests.post(f"{base_url}/v1/chat/completions", json=openai_payload, headers={"Content-Type": "application/json"}, timeout=45)
+                if resp.status_code == 200:
+                    content_str = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+
+            if content_str:
+                # Strip thinking tags (e.g. DeepSeek-R1 <think>...</think>)
+                content_str = re.sub(r"<think>.*?</think>", "", content_str, flags=re.DOTALL).strip()
+                if "```" in content_str:
+                    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", content_str)
+                    if match:
+                        content_str = match.group(1).strip()
+                s_idx = content_str.find("{")
+                e_idx = content_str.rfind("}")
+                if s_idx != -1 and e_idx != -1:
+                    content_str = content_str[s_idx:e_idx+1]
+
                 res_dict = json.loads(content_str)
+                # Auto-normalize agent field
+                if "agent" in res_dict and (not res_dict["agent"] or res_dict["agent"] != agent_name):
+                    res_dict["agent"] = agent_name
+                # Auto-normalize confidence (percentage to 0.0-1.0 float)
+                if "confidence" in res_dict and isinstance(res_dict["confidence"], (int, float)):
+                    if res_dict["confidence"] > 1.0:
+                        res_dict["confidence"] = min(1.0, float(res_dict["confidence"]) / 100.0)
+
                 parsed_obj = response_model(**res_dict)
                 if guardrail_fn is None or guardrail_fn(parsed_obj, agent_name, twin):
                     LAST_RUN_STATS["llm_calls"] += 1
