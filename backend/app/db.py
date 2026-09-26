@@ -25,7 +25,7 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 from app.config import config
 from app.models.schemas import TwinState
 
-# Database engine setup
+# Database engine setup with production connection pooling
 database_url = config.database_url
 if database_url.startswith("sqlite"):
     engine = create_engine(
@@ -33,7 +33,13 @@ if database_url.startswith("sqlite"):
         connect_args={"check_same_thread": False},
     )
 else:
-    engine = create_engine(database_url)
+    engine = create_engine(
+        database_url,
+        pool_pre_ping=True,
+        pool_recycle=1800,
+        pool_size=10,
+        max_overflow=20,
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

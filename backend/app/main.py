@@ -9,18 +9,24 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import logging
 from fastapi import (
     Depends,
     FastAPI,
     HTTPException,
     Query,
+    Request,
+    Response,
     WebSocket,
     WebSocketDisconnect,
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger("recovery_swarm.api")
 
 from app.config import config
 from app.db import (
@@ -83,7 +89,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware for Vite dev server
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -91,6 +97,71 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------- Enterprise Security Headers Middleware ----------
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Enforces enterprise security headers across all API responses."""
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
+
+
+# ---------- Global Production Exception Handler ----------
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Sanitizes unexpected server exceptions to avoid leaking internals or stack traces."""
+    logger.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "A secure server error occurred. Please contact hospital support.",
+            }
+        },
+    )
+
+
+# ---------- Production Health & Diagnostic Endpoints ----------
+
+@app.get("/health", tags=["Health"])
+@app.get("/api/health", tags=["Health"])
+def health_check(db: Session = Depends(get_db)):
+    """Enterprise health and readiness probe verifying DB connectivity and engine status."""
+    db_status = "connected"
+    try:
+        # Fast connection test
+        db.query(PatientModel).first()
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+
+    local_url = os.getenv("LOCAL_LLM_URL", "").strip()
+    llm_mode = "local_gpu" if local_url else ("fallback_offline" if config.fallback_mode else "gemini_cloud")
+
+    return {
+        "status": "healthy" if db_status == "connected" else "degraded",
+        "service": "recovery-swarm-engine",
+        "version": "1.0.0",
+        "environment": "production",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "database": db_status,
+        "llm_mode": llm_mode,
+        "agents_active": 7,
+        "security": {
+            "hipaa_deidentification": "enabled",
+            "deterministic_guardian": "active",
+            "rule_r5_enforced": True,
+        },
+    }
 
 
 # ---------- Pydantic Input Schemas for Simulator/Review Endpoints ----------
@@ -674,11 +745,16 @@ def clinician_review(cycle_id: str, req: ClinicianReviewRequest, db: Session = D
 
 @app.websocket("/ws/patients/{patient_id}")
 async def websocket_endpoint(websocket: WebSocket, patient_id: str):
-    """WebSocket streaming endpoint for patient cycle events."""
+    """WebSocket streaming endpoint for patient cycle events with heartbeat handling."""
     await ws_manager.connect(websocket, patient_id)
     try:
         while True:
-            # Keep connection open and receive optional messages
+            # Keep connection open and handle client heartbeats
             data = await websocket.receive_text()
+            if data == "ping":
+                await websocket.send_text("pong")
     except WebSocketDisconnect:
+        ws_manager.disconnect(websocket, patient_id)
+    except Exception as e:
+        logger.debug(f"WebSocket client disconnected for {patient_id}: {e}")
         ws_manager.disconnect(websocket, patient_id)

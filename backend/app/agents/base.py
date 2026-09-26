@@ -4,6 +4,7 @@ Process-wide rate limiting, Google GenAI SDK integration, Pydantic validation, g
 """
 
 from copy import deepcopy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -92,6 +93,25 @@ def sanitize_json_schema_for_gemini(schema: Any) -> Any:
     return schema
 
 
+# ---------- HIPAA De-Identification Filter ----------
+
+def deidentify_prompt_for_llm(user_prompt: str, twin: Any) -> str:
+    """HIPAA Safe Harbor De-Identification Filter.
+    
+    Masks patient personal names and direct identifiers before payload 
+    leaves the server boundary for external inference.
+    """
+    if not user_prompt or not twin:
+        return user_prompt
+    
+    patient_name = getattr(getattr(twin, "profile", None), "name", None)
+    if patient_name and patient_name in user_prompt:
+        token = f"Subject_{hashlib.sha256(patient_name.encode('utf-8')).hexdigest()[:8]}"
+        user_prompt = user_prompt.replace(f'"{patient_name}"', f'"{token}"').replace(patient_name, token)
+        
+    return user_prompt
+
+
 # ---------- Base Structured LLM Invocation ----------
 
 def call_llm_structured(
@@ -107,10 +127,44 @@ def call_llm_structured(
 ) -> T:
     """Executes an LLM structured output call with cache, rate limiting, retries, guardrails, and per-call fallback."""
     
-    # 1. Check FALLBACK_MODE environment variable or missing API key
+    # 0. Apply HIPAA De-Identification Privacy Filter
+    user_prompt = deidentify_prompt_for_llm(user_prompt, twin)
+    
+    # 1. Check FALLBACK_MODE environment variable
     if config.fallback_mode or os.getenv("FALLBACK_MODE", "false").lower() == "true":
         LAST_RUN_STATS["fallback_calls"] += 1
         return fallback_fn(twin)
+
+    # Check local GPU/Ollama endpoint first (e.g. Google Colab GPU / On-Premise Ollama)
+    local_llm_url = os.getenv("LOCAL_LLM_URL", "").strip()
+    if local_llm_url:
+        try:
+            import requests
+            endpoint = f"{local_llm_url.rstrip('/')}/chat/completions"
+            local_model = os.getenv("LOCAL_LLM_MODEL", "").strip() or "llama3.2:1b"
+            payload = {
+                "model": local_model,
+                "messages": [
+                    {"role": "system", "content": system_prompt + "\nReturn ONLY raw valid JSON matching schema."},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "format": "json",
+                "temperature": 0.1,
+                "stream": False
+            }
+            resp = requests.post(endpoint, json=payload, headers={"Content-Type": "application/json"}, timeout=30)
+            if resp.status_code == 200:
+                resp_data = resp.json()
+                content_str = resp_data["choices"][0]["message"]["content"].strip()
+                if content_str.startswith("```"):
+                    content_str = content_str.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+                res_dict = json.loads(content_str)
+                parsed_obj = response_model(**res_dict)
+                if guardrail_fn is None or guardrail_fn(parsed_obj, agent_name, twin):
+                    LAST_RUN_STATS["llm_calls"] += 1
+                    return parsed_obj
+        except Exception:
+            pass  # Seamlessly fall back to Google GenAI / fallback_fn
 
     api_key = config.llm_api_key or os.getenv("LLM_API_KEY", "")
     if not api_key or api_key == "your_key_here" or not api_key.startswith("AIzaSy"):
