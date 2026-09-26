@@ -112,6 +112,16 @@ def deidentify_prompt_for_llm(user_prompt: str, twin: Any) -> str:
     return user_prompt
 
 
+AGENT_LOCAL_MODEL_MAP = {
+    "mobility": "llama3.2:3b",
+    "sleep": "llama3.2:3b",
+    "inflammation": "llama3.1:8b",
+    "medication": "llama3.1:8b",
+    "coordinator": "llama3.1:8b",
+    "debate": "llama3.1:8b",
+}
+
+
 # ---------- Base Structured LLM Invocation ----------
 
 def call_llm_structured(
@@ -141,7 +151,8 @@ def call_llm_structured(
         try:
             import requests
             endpoint = f"{local_llm_url.rstrip('/')}/chat/completions"
-            local_model = os.getenv("LOCAL_LLM_MODEL", "").strip() or "llama3.2:1b"
+            # Heterogeneous model dispatch: assign dedicated model by agent specialty
+            local_model = AGENT_LOCAL_MODEL_MAP.get(agent_name.lower(), "llama3.1:8b")
             payload = {
                 "model": local_model,
                 "messages": [
